@@ -1,0 +1,11 @@
+{
+  "name": "tokenscope",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An offline inference planning studio: pricing fixtures, memory math, batch simulation and route replay in one static page.",
+  "scripts": {
+    "test": "node --test tests/"
+  },
+  "author": "Aariv Patel",
+  "license": "MIT"
+}
