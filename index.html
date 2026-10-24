@@ -6,9 +6,9 @@
   <meta name="description" content="TokenScope is an offline inference planning studio: model pricing fixtures, KV cache math, batch queueing simulation and route policy replay in one static page.">
   <meta name="author" content="Aariv Patel">
   <meta name="color-scheme" content="dark">
-  <meta name="theme-color" content="#0a0d13">
+  <meta name="theme-color" content="#0b0e12">
   <title>TokenScope, An Inference Planning Studio</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230a0d13'/%3E%3Ccircle cx='15' cy='17' r='7' fill='none' stroke='%238b7cff' stroke-width='3'/%3E%3Ccircle cx='24' cy='8' r='3' fill='%233fd6c2'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b0e12'/%3E%3Cpath d='M16 5v5M16 22v5M5 16h5M22 16h5' stroke='%233ad6e8' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='6.5' fill='none' stroke='%233ad6e8' stroke-width='2'/%3E%3Ccircle cx='16' cy='16' r='1.8' fill='%233ad6e8'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -16,40 +16,64 @@
 
   <header class="site-header">
     <div class="brand">
-      <svg class="brand-mark" width="30" height="30" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
-        <rect width="32" height="32" rx="8" fill="#141b2b"></rect>
-        <circle cx="15" cy="17" r="7" fill="none" stroke="#8b7cff" stroke-width="2.5"></circle>
-        <circle cx="24" cy="8" r="3" fill="#3fd6c2"></circle>
+      <svg class="brand-mark" width="28" height="28" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <rect width="32" height="32" rx="6" fill="#10141b"></rect>
+        <path d="M16 5v5M16 22v5M5 16h5M22 16h5" stroke="#3ad6e8" stroke-width="2"></path>
+        <circle cx="16" cy="16" r="6.5" fill="none" stroke="#3ad6e8" stroke-width="2"></circle>
+        <circle cx="16" cy="16" r="1.8" fill="#3ad6e8"></circle>
       </svg>
       <div class="brand-text">
         <span class="brand-name">TokenScope</span>
         <span class="brand-sub">Inference Planning Studio</span>
       </div>
     </div>
+    <p class="header-status"><span class="status-dot" aria-hidden="true"></span>Offline Fixture Build</p>
     <button id="tour-start" class="btn btn-ghost btn-small" type="button">Start The Tour</button>
   </header>
 
   <main id="main">
 
     <section class="hero" aria-labelledby="hero-title">
-      <h1 id="hero-title">Plan Inference Before You Ship</h1>
-      <p class="lede">TokenScope is an inference planning studio for people shipping LLM features. Compare model tiers, check KV cache headroom, simulate batching, and rehearse a routing policy, all in one offline page built on fixture data you can edit.</p>
-      <ul class="chip-row" aria-label="Studio facts">
-        <li class="chip">Fixture Data Only</li>
-        <li class="chip">Runs Fully Offline</li>
-        <li class="chip">Deterministic Sims</li>
-      </ul>
-      <div class="hero-actions">
-        <button id="tour-start-hero" class="btn btn-primary" type="button">Start The Guided Tour</button>
-        <button id="jump-planner" class="btn btn-ghost" type="button">Open The Model Planner</button>
+      <div class="hero-copy">
+        <h1 id="hero-title">Plan <span class="accent-word">Inference</span> Before You Ship</h1>
+        <p class="lede">TokenScope is an inference planning studio for people shipping LLM features. Compare model tiers, check KV cache headroom, simulate batching, and rehearse a routing policy, all in one offline page built on fixture data you can edit.</p>
+        <ul class="spec-row" aria-label="Studio facts">
+          <li>Fixture Data Only</li>
+          <li>Runs Fully Offline</li>
+          <li>Deterministic Sims</li>
+        </ul>
+        <div class="hero-actions">
+          <button id="tour-start-hero" class="btn btn-primary" type="button">Start The Guided Tour</button>
+          <button id="jump-planner" class="btn btn-ghost" type="button">Open The Model Planner</button>
+        </div>
+      </div>
+      <div class="readout-rail corner-ticks" role="group" aria-label="Live bench readout wired to the planner fixtures">
+        <div class="readout">
+          <span class="readout-label" id="hero-read-cost-label">Cost Per Request</span>
+          <span class="readout-value" id="hero-read-cost">$0.0004</span>
+          <span class="readout-sub" id="hero-read-cost-sub">Lowest Tier, Nano</span>
+        </div>
+        <div class="readout">
+          <span class="readout-label" id="hero-read-latency-label">Fastest Response</span>
+          <span class="readout-value" id="hero-read-latency">3.45 s</span>
+          <span class="readout-sub" id="hero-read-latency-sub">Nano At 180 Tokens Per Second</span>
+        </div>
+        <div class="readout">
+          <span class="readout-label" id="hero-read-net-label">Network Requests</span>
+          <span class="readout-value" id="hero-read-net">0</span>
+          <span class="readout-sub" id="hero-read-net-sub">Everything Computes Locally</span>
+        </div>
       </div>
     </section>
 
-    <nav id="panel-tabs" class="tabs" role="tablist" aria-label="Studio Panels">
-      <button class="tab" role="tab" id="tab-planner" aria-selected="true" aria-controls="panel-planner" type="button">Model Planner</button>
-      <button class="tab" role="tab" id="tab-memory" aria-selected="false" aria-controls="panel-memory" tabindex="-1" type="button">Memory Fit</button>
-      <button class="tab" role="tab" id="tab-sim" aria-selected="false" aria-controls="panel-sim" tabindex="-1" type="button">Batch Simulator</button>
-      <button class="tab" role="tab" id="tab-route" aria-selected="false" aria-controls="panel-route" tabindex="-1" type="button">Route Builder</button>
+    <nav class="tabs-wrap" aria-label="Studio Panels">
+      <div id="panel-tabs" class="tabs" role="tablist">
+        <span class="tab-indicator" id="tab-indicator" aria-hidden="true"></span>
+        <button class="tab" role="tab" id="tab-planner" aria-selected="true" aria-controls="panel-planner" type="button"><span class="tab-index" aria-hidden="true">01</span>Model Planner</button>
+        <button class="tab" role="tab" id="tab-memory" aria-selected="false" aria-controls="panel-memory" tabindex="-1" type="button"><span class="tab-index" aria-hidden="true">02</span>Memory Fit</button>
+        <button class="tab" role="tab" id="tab-sim" aria-selected="false" aria-controls="panel-sim" tabindex="-1" type="button"><span class="tab-index" aria-hidden="true">03</span>Batch Simulator</button>
+        <button class="tab" role="tab" id="tab-route" aria-selected="false" aria-controls="panel-route" tabindex="-1" type="button"><span class="tab-index" aria-hidden="true">04</span>Route Builder</button>
+      </div>
     </nav>
 
     <section id="panel-planner" class="panel" role="tabpanel" aria-labelledby="tab-planner" tabindex="0">
@@ -58,27 +82,29 @@
         <p>Estimate cost and latency for a workload across model tiers. The pricing table is a fixture: edit any cell and every estimate recomputes. No number here quotes a real vendor.</p>
       </div>
       <div class="panel-grid">
-        <div class="card" id="planner-workload-card">
+        <div class="mod" id="planner-workload-card">
           <h3>Workload</h3>
-          <div class="field">
-            <label for="wl-input-tokens">Input Tokens Per Request</label>
-            <input id="wl-input-tokens" type="number" min="0" step="any" value="1200" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="wl-output-tokens">Output Tokens Per Request</label>
-            <input id="wl-output-tokens" type="number" min="0" step="any" value="600" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="wl-rpd">Requests Per Day</label>
-            <input id="wl-rpd" type="number" min="0" step="any" value="2000" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="wl-days">Days Per Month</label>
-            <input id="wl-days" type="number" min="1" step="any" value="30" inputmode="numeric">
+          <div class="field-pair">
+            <div class="field">
+              <label for="wl-input-tokens">Input Tokens Per Request</label>
+              <input id="wl-input-tokens" type="number" min="0" step="any" value="1200" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="wl-output-tokens">Output Tokens Per Request</label>
+              <input id="wl-output-tokens" type="number" min="0" step="any" value="600" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="wl-rpd">Requests Per Day</label>
+              <input id="wl-rpd" type="number" min="0" step="any" value="2000" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="wl-days">Days Per Month</label>
+              <input id="wl-days" type="number" min="1" step="any" value="30" inputmode="numeric">
+            </div>
           </div>
           <p class="hint">A fixture workload. Edit it to match the feature you are planning.</p>
         </div>
-        <div class="card" id="planner-fixture-card">
+        <div class="mod" id="planner-fixture-card">
           <h3>Fixture Pricing Table</h3>
           <p class="fixture-note"><span class="tag">Fixture</span> Every cell below is editable. Values are planning placeholders, not vendor quotes.</p>
           <div class="table-scroll">
@@ -99,9 +125,9 @@
           </div>
           <button id="planner-reset" class="btn btn-ghost btn-small" type="button">Reset Fixtures</button>
         </div>
-        <div class="card card-wide" id="planner-results-card">
+        <div class="mod mod-wide" id="planner-results-card">
           <h3>Estimates</h3>
-          <div id="planner-results" class="result-grid" aria-live="polite"></div>
+          <div id="planner-results" class="channel-rack" aria-live="polite"></div>
         </div>
       </div>
     </section>
@@ -112,58 +138,60 @@
         <p>Compute KV cache and weight memory with the full arithmetic shown line by line. Change the model shape, context length and precision to find where a memory budget breaks.</p>
       </div>
       <div class="panel-grid">
-        <div class="card" id="mem-shape-card">
+        <div class="mod" id="mem-shape-card">
           <h3>Model Shape</h3>
           <p class="fixture-note"><span class="tag">Fixture</span> An example small model shape. Edit everything.</p>
-          <div class="field">
-            <label for="mem-params">Parameters (Billions)</label>
-            <input id="mem-params" type="number" min="0" step="0.1" value="8" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label for="mem-layers">Layers</label>
-            <input id="mem-layers" type="number" min="1" step="1" value="32" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="mem-kv-heads">KV Heads</label>
-            <input id="mem-kv-heads" type="number" min="1" step="1" value="8" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="mem-head-dim">Head Dimension</label>
-            <input id="mem-head-dim" type="number" min="1" step="1" value="128" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="mem-context">Context Tokens</label>
-            <input id="mem-context" type="number" min="1" step="1" value="8192" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="mem-weight-quant">Weight Precision</label>
-            <select id="mem-weight-quant">
-              <option value="fp16" selected>fp16 (2 bytes)</option>
-              <option value="bf16">bf16 (2 bytes)</option>
-              <option value="int8">int8 (1 byte)</option>
-              <option value="int4">int4 (0.5 bytes)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="mem-kv-quant">KV Precision</label>
-            <select id="mem-kv-quant">
-              <option value="fp16" selected>fp16 (2 bytes)</option>
-              <option value="bf16">bf16 (2 bytes)</option>
-              <option value="int8">int8 (1 byte)</option>
-              <option value="int4">int4 (0.5 bytes)</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="mem-budget">Memory Budget (GB)</label>
-            <input id="mem-budget" type="number" min="0" step="any" value="24" inputmode="decimal">
+          <div class="field-pair">
+            <div class="field">
+              <label for="mem-params">Parameters (Billions)</label>
+              <input id="mem-params" type="number" min="0" step="0.1" value="8" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="mem-layers">Layers</label>
+              <input id="mem-layers" type="number" min="1" step="1" value="32" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="mem-kv-heads">KV Heads</label>
+              <input id="mem-kv-heads" type="number" min="1" step="1" value="8" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="mem-head-dim">Head Dimension</label>
+              <input id="mem-head-dim" type="number" min="1" step="1" value="128" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="mem-context">Context Tokens</label>
+              <input id="mem-context" type="number" min="1" step="1" value="8192" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="mem-weight-quant">Weight Precision</label>
+              <select id="mem-weight-quant">
+                <option value="fp16" selected>fp16 (2 bytes)</option>
+                <option value="bf16">bf16 (2 bytes)</option>
+                <option value="int8">int8 (1 byte)</option>
+                <option value="int4">int4 (0.5 bytes)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="mem-kv-quant">KV Precision</label>
+              <select id="mem-kv-quant">
+                <option value="fp16" selected>fp16 (2 bytes)</option>
+                <option value="bf16">bf16 (2 bytes)</option>
+                <option value="int8">int8 (1 byte)</option>
+                <option value="int4">int4 (0.5 bytes)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="mem-budget">Memory Budget (GB)</label>
+              <input id="mem-budget" type="number" min="0" step="any" value="24" inputmode="decimal">
+            </div>
           </div>
           <p class="hint">KV heads can be fewer than query heads on grouped query attention models; the math uses the KV head count. GB means decimal gigabytes here.</p>
         </div>
-        <div class="card" id="mem-steps-card">
-          <h3>Step By Step</h3>
-          <ol id="mem-steps" class="steps"></ol>
+        <div class="mod corner-ticks" id="mem-steps-card">
+          <h3>Worked Derivation</h3>
+          <ol id="mem-steps" class="proof"></ol>
         </div>
-        <div class="card card-wide" id="mem-results-card">
+        <div class="mod mod-wide" id="mem-results-card">
           <h3>Result</h3>
           <div id="mem-results" class="result-grid" aria-live="polite"></div>
           <p id="mem-verdict" class="verdict"></p>
@@ -177,38 +205,45 @@
         <p>A deterministic, seeded queueing simulation shows how p50 and p95 latency move as arrival rate and batch size change. Request counts stay small so every run is instant.</p>
       </div>
       <div class="panel-grid">
-        <div class="card" id="sim-settings-card">
+        <div class="mod" id="sim-settings-card">
           <h3>Simulation Settings</h3>
           <p class="fixture-note"><span class="tag">Fixture</span> Seeded exponential arrivals. Same seed, same run, every time.</p>
-          <div class="field">
-            <label for="sim-rate">Arrival Rate (Requests Per Second)</label>
-            <input id="sim-rate" type="number" min="0" step="0.1" value="2" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label for="sim-batch">Batch Size</label>
-            <input id="sim-batch" type="number" min="1" max="32" step="1" value="4" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="sim-service">Service Time Per Request (s)</label>
-            <input id="sim-service" type="number" min="0.01" step="0.01" value="0.35" inputmode="decimal">
-          </div>
-          <div class="field">
-            <label for="sim-max">Requests In Simulation</label>
-            <input id="sim-max" type="number" min="1" max="200" step="1" value="120" inputmode="numeric">
-          </div>
-          <div class="field">
-            <label for="sim-seed">Seed</label>
-            <input id="sim-seed" type="number" min="0" step="1" value="42" inputmode="numeric">
+          <div class="field-pair">
+            <div class="field">
+              <label for="sim-rate">Arrival Rate (Requests Per Second)</label>
+              <input id="sim-rate" type="number" min="0" step="0.1" value="2" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="sim-batch">Batch Size</label>
+              <input id="sim-batch" type="number" min="1" max="32" step="1" value="4" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="sim-service">Service Time Per Request (s)</label>
+              <input id="sim-service" type="number" min="0.01" step="0.01" value="0.35" inputmode="decimal">
+            </div>
+            <div class="field">
+              <label for="sim-max">Requests In Simulation</label>
+              <input id="sim-max" type="number" min="1" max="200" step="1" value="120" inputmode="numeric">
+            </div>
+            <div class="field">
+              <label for="sim-seed">Seed</label>
+              <input id="sim-seed" type="number" min="0" step="1" value="42" inputmode="numeric">
+            </div>
           </div>
           <button id="sim-run" class="btn btn-primary" type="button">Run Simulation</button>
           <p class="hint">One batch of up to B requests completes in one service window. The sweep always reruns rates 0.5, 1, 2, 3, 4 and 6 with your settings.</p>
         </div>
-        <div class="card" id="sim-chart-card">
+        <div class="mod corner-ticks" id="sim-chart-card">
           <h3>Latency Sweep</h3>
-          <canvas id="sim-chart" role="img" aria-label="Line chart of p50 and p95 latency across the arrival rate sweep. The same numbers are in the sweep table below."></canvas>
-          <p class="chart-legend"><span class="legend-swatch swatch-p50" aria-hidden="true"></span>p50 Latency<span class="legend-swatch swatch-p95" aria-hidden="true"></span>p95 Latency</p>
+          <canvas id="sim-chart" role="img" tabindex="0" aria-label="Line chart of p50 and p95 latency across the arrival rate sweep. Focus the chart and use the arrow keys to move the crosshair between sweep points. The same numbers appear in the sweep table below."></canvas>
+          <p id="sim-crosshair" class="crosshair-readout">Hover the chart, or focus it and use the arrow keys, to read each point.</p>
+          <p id="sim-crosshair-live" class="visually-hidden" aria-live="polite"></p>
+          <p class="chart-legend">
+            <span class="legend-item"><span class="legend-swatch swatch-p50" aria-hidden="true"></span>p50 Latency</span>
+            <span class="legend-item"><span class="legend-swatch swatch-p95" aria-hidden="true"></span>p95 Latency</span>
+          </p>
         </div>
-        <div class="card card-wide" id="sim-table-card">
+        <div class="mod mod-wide" id="sim-table-card">
           <h3>Sweep Table</h3>
           <div class="table-scroll">
             <table class="data-table" id="sim-table">
@@ -228,7 +263,7 @@
             </table>
           </div>
         </div>
-        <div class="card" id="sim-detail-card">
+        <div class="mod" id="sim-detail-card">
           <h3>Current Run Detail</h3>
           <div id="sim-detail" class="result-grid" aria-live="polite"></div>
         </div>
@@ -241,7 +276,7 @@
         <p>Compose cheap model first routing with confidence based escalation, then replay the policy against a labeled synthetic request log to see the cost and quality tradeoffs.</p>
       </div>
       <div class="panel-grid">
-        <div class="card" id="route-policy-card">
+        <div class="mod" id="route-policy-card">
           <h3>Policy Settings</h3>
           <p class="fixture-note"><span class="tag">Synthetic</span> Requests come from a seeded synthetic log with difficulty labels.</p>
           <div class="field">
@@ -254,23 +289,23 @@
           </div>
           <p class="hint">A request first tries its routed model. While confidence sits below the threshold it retries one tier up, and every attempt is billed.</p>
         </div>
-        <div class="card" id="route-rules-card">
+        <div class="mod" id="route-rules-card">
           <h3>Routing Rules</h3>
           <p class="hint">First matching rule wins. A blank escalation threshold means never escalate.</p>
           <div id="route-rules" class="rule-list"></div>
           <button id="route-add" class="btn btn-ghost btn-small" type="button">Add Rule</button>
         </div>
-        <div class="card" id="route-replay-card">
+        <div class="mod" id="route-replay-card">
           <h3>Replay</h3>
           <button id="route-replay" class="btn btn-primary" type="button">Replay Synthetic Log</button>
           <div id="route-log-summary" class="log-summary"></div>
           <p class="hint">Difficulty is the minimum fixture tier the label says a request needs. Success means the final model tier meets it. Confidence values are a synthetic proxy, not measured scores.</p>
         </div>
-        <div class="card card-wide" id="route-summary-card">
+        <div class="mod mod-wide" id="route-summary-card">
           <h3>Replay Summary</h3>
           <div id="route-summary" class="result-grid" aria-live="polite"></div>
         </div>
-        <div class="card card-wide" id="route-rows-card">
+        <div class="mod mod-wide" id="route-rows-card">
           <h3>Replay Rows</h3>
           <div class="table-scroll table-tall">
             <table class="data-table" id="route-table">
@@ -298,7 +333,7 @@
 
   <footer class="site-footer">
     <div id="footer-note">
-      <p>TokenScope is an entry for the Nebius x NVIDIA Global AI Hackathon, built by Aariv Patel.</p>
+      <p class="footer-lead">TokenScope is an entry for the Nebius x NVIDIA Global AI Hackathon, built by Aariv Patel.</p>
       <p>Every number on this page is an editable fixture or a seeded synthetic log. The app makes no network requests and no live inference provider is contacted.</p>
       <p>The README documents where a Nebius inference API key would plug in for a future live build.</p>
       <p class="footer-meta"><a href="README.md">Read The README</a></p>

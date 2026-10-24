@@ -30,6 +30,19 @@
   var SWEEP_RATES = [0.5, 1, 2, 3, 4, 6];
   var CATEGORIES = Fixtures.CATEGORIES;
 
+  /* Chart palette, mirrored from the stylesheet tokens. */
+  var CHART = {
+    accent: '#3ad6e8',
+    ink: 'rgba(233, 237, 242, 0.88)',
+    muted: '#8d99a8',
+    faint: '#5a6472',
+    grid: 'rgba(148, 163, 184, 0.10)',
+    gridStrong: 'rgba(148, 163, 184, 0.22)',
+    crosshair: 'rgba(58, 214, 232, 0.45)',
+    font: '10px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace'
+  };
+  var CHART_M = { top: 30, right: 20, bottom: 50, left: 64 };
+
   var FIXTURE_FIELDS = [
     { key: 'inputPerMillion', step: '0.01', min: '0', aria: 'input price in USD per million tokens' },
     { key: 'outputPerMillion', step: '0.01', min: '0', aria: 'output price in USD per million tokens' },
@@ -59,6 +72,10 @@
   var currentTab = 'planner';
   var lastSweep = [];
   var ruleCounter = 3;
+  var heroIntroDone = false;
+  var heroRaf = null;
+  var chartHover = null;
+  var chartGeo = null;
 
   /* ---------- helpers ---------- */
 
@@ -88,8 +105,17 @@
     return v.toFixed(3) + ' s';
   }
 
+  function fmtSec2(v) {
+    if (v == null) { return 'n/a'; }
+    return v.toFixed(2) + ' s';
+  }
+
   function fmtPct(v) {
     return (v * 100).toFixed(1) + '%';
+  }
+
+  function pad2(n) {
+    return (n < 10 ? '0' : '') + n;
   }
 
   function debounce(fn, ms) {
@@ -121,19 +147,29 @@
     return node;
   }
 
-  function statBlock(label, value) {
-    var div = el('div', 'stat');
+  function statBlock(label, value, modifier) {
+    var div = el('div', 'stat' + (modifier ? ' stat-' + modifier : ''));
     div.appendChild(el('span', 'stat-label', label));
     div.appendChild(el('span', 'stat-value', value));
     return div;
   }
 
   function addBadge(host, text, modifier) {
-    var badge = el('span', 'badge' + (modifier ? ' ' + modifier : ''), text);
+    var badge = el('span', 'flag' + (modifier ? ' ' + modifier : ''), text);
     host.appendChild(badge);
   }
 
   /* ---------- tabs ---------- */
+
+  function moveTabIndicator() {
+    var rail = $('panel-tabs');
+    var ind = $('tab-indicator');
+    if (!rail || !ind) { return; }
+    var active = rail.querySelector('.tab[aria-selected="true"]');
+    if (!active) { return; }
+    ind.style.width = active.offsetWidth + 'px';
+    ind.style.transform = 'translateX(' + active.offsetLeft + 'px)';
+  }
 
   function activatePanel(name) {
     currentTab = name;
@@ -149,6 +185,7 @@
         panelEl.setAttribute('hidden', '');
       }
     });
+    moveTabIndicator();
     if (name === 'sim') {
       drawSimChart(lastSweep);
     }
@@ -173,6 +210,69 @@
         $(TAB_EL[TAB_IDS[next]]).focus();
       }
     });
+  }
+
+  /* ---------- bench readout rail ---------- */
+
+  function runHeroIntro(counters) {
+    if (heroRaf) {
+      window.cancelAnimationFrame(heroRaf);
+      heroRaf = null;
+    }
+    var t0 = null;
+    var DUR = 900;
+    function tick(ts) {
+      if (t0 === null) { t0 = ts; }
+      var p = Math.min(1, (ts - t0) / DUR);
+      var eased = 1 - Math.pow(1 - p, 3);
+      counters.forEach(function (c) {
+        c.el.textContent = c.format(c.target * eased);
+      });
+      if (p < 1) {
+        heroRaf = window.requestAnimationFrame(tick);
+      } else {
+        heroRaf = null;
+      }
+    }
+    heroRaf = window.requestAnimationFrame(tick);
+  }
+
+  function renderHeroReadout(rows, cheapestId, fastestId) {
+    var costEl = $('hero-read-cost');
+    var latEl = $('hero-read-latency');
+    if (!costEl || !latEl) { return; }
+
+    var cheapest = null;
+    var fastest = null;
+    rows.forEach(function (r) {
+      if (r.id === cheapestId) { cheapest = r; }
+      if (r.id === fastestId) { fastest = r; }
+    });
+    if (!cheapest) { return; }
+
+    var costSub = $('hero-read-cost-sub');
+    var latSub = $('hero-read-latency-sub');
+    if (costSub) { costSub.textContent = 'Lowest Tier, ' + cheapest.name; }
+    if (latSub) {
+      latSub.textContent = fastest
+        ? fastest.name + ' At ' + fastest.tokensPerSecond + ' Tokens Per Second'
+        : '';
+    }
+
+    if (!heroIntroDone && motionOk()) {
+      runHeroIntro([
+        { el: costEl, target: cheapest.costPerRequest, format: function (v) { return '$' + v.toFixed(4); } },
+        { el: latEl, target: fastest ? fastest.latencySeconds : 0, format: fmtSec2 }
+      ]);
+    } else {
+      if (heroRaf) {
+        window.cancelAnimationFrame(heroRaf);
+        heroRaf = null;
+      }
+      costEl.textContent = '$' + cheapest.costPerRequest.toFixed(4);
+      latEl.textContent = fmtSec2(fastest ? fastest.latencySeconds : null);
+    }
+    heroIntroDone = true;
   }
 
   /* ---------- model planner ---------- */
@@ -228,6 +328,16 @@
     return state.workload;
   }
 
+  function tierTicks(tier) {
+    var wrap = el('span', 'tier-ticks');
+    wrap.setAttribute('role', 'img');
+    wrap.setAttribute('aria-label', 'Tier ' + tier + ' of 4');
+    for (var i = 0; i <= 4; i++) {
+      wrap.appendChild(el('i', i <= tier ? 'tick is-on' : 'tick'));
+    }
+    return wrap;
+  }
+
   function renderPlannerResults() {
     var workload = readWorkload();
     var rows = Pricing.compareModels(state.models, workload);
@@ -237,17 +347,18 @@
     host.innerHTML = '';
 
     rows.slice().sort(function (a, b) { return a.costPerRequest - b.costPerRequest; }).forEach(function (row) {
-      var card = el('article', 'model-card' + (row.id === cheapestId ? ' is-best' : ''));
-      var header = document.createElement('header');
-      header.appendChild(el('h4', null, row.name));
-      header.appendChild(el('span', 'tier-chip', 'Tier ' + row.tier));
+      var card = el('article', 'channel' + (row.id === cheapestId ? ' is-best' : ''));
+      var header = el('header', 'channel-head');
+      header.appendChild(el('h4', 'channel-name', row.name));
+      header.appendChild(tierTicks(row.tier));
       card.appendChild(header);
 
-      var big = el('p', 'big-value', Pricing.formatUSD(row.costPerRequest));
-      big.appendChild(el('small', null, 'per request'));
+      var big = el('p', 'channel-cost');
+      big.appendChild(el('span', 'channel-cost-value', Pricing.formatUSD(row.costPerRequest)));
+      big.appendChild(el('span', 'channel-cost-unit', 'per request'));
       card.appendChild(big);
 
-      var dl = document.createElement('dl');
+      var dl = el('dl', 'channel-specs');
       [
         ['Per 1K Requests', Pricing.formatUSD(row.costPer1k)],
         ['Monthly At Workload', fmtUSD2(row.monthlyCost)],
@@ -261,13 +372,15 @@
       });
       card.appendChild(dl);
 
-      var badges = el('p', 'badges');
-      if (row.id === cheapestId) { addBadge(badges, 'Lowest Cost', ''); }
-      if (row.id === fastestId) { addBadge(badges, 'Highest Throughput', 'badge-violet'); }
+      var badges = el('p', 'channel-flags');
+      if (row.id === cheapestId) { addBadge(badges, 'Lowest Cost', 'flag-accent'); }
+      if (row.id === fastestId) { addBadge(badges, 'Highest Throughput', ''); }
       if (badges.childNodes.length) { card.appendChild(badges); }
 
       host.appendChild(card);
     });
+
+    renderHeroReadout(rows, cheapestId, fastestId);
   }
 
   function wirePlanner() {
@@ -296,18 +409,33 @@
     };
   }
 
+  function buildProofExpr(expression, isFinal) {
+    var p = el('p', 'proof-expr');
+    var eq = expression.lastIndexOf('=');
+    if (eq === -1) {
+      p.appendChild(el('span', 'proof-lhs', expression));
+      return p;
+    }
+    p.appendChild(el('span', 'proof-lhs', expression.slice(0, eq).trim()));
+    p.appendChild(el('span', 'proof-eq', '='));
+    p.appendChild(el('span', 'proof-result', expression.slice(eq + 1).trim()));
+    return p;
+  }
+
   function renderMemory() {
     var cfg = readMemoryCfg();
     var report = Memory.fitReport(cfg);
 
     var stepsHost = $('mem-steps');
     stepsHost.innerHTML = '';
-    Memory.buildSteps(cfg).forEach(function (step, i) {
-      var li = document.createElement('li');
-      li.appendChild(el('span', 'step-num', String(i + 1)));
-      var text = el('div');
-      text.appendChild(el('p', 'step-label', step.label));
-      text.appendChild(el('p', 'step-expr', step.expression));
+    var steps = Memory.buildSteps(cfg);
+    steps.forEach(function (step, i) {
+      var isFinal = i === steps.length - 1;
+      var li = el('li', 'proof-step' + (isFinal ? ' proof-final' : ''));
+      li.appendChild(el('span', 'proof-index', pad2(i + 1)));
+      var text = el('div', 'proof-body');
+      text.appendChild(el('p', 'proof-label', step.label));
+      text.appendChild(buildProofExpr(step.expression, isFinal));
       li.appendChild(text);
       stepsHost.appendChild(li);
     });
@@ -318,7 +446,7 @@
     host.appendChild(statBlock('KV Per Sequence', report.kvPerSequenceGB.toFixed(2) + ' GB'));
     host.appendChild(statBlock('KV Bytes Per Token', report.kvBytesPerTokenValue.toLocaleString('en-US')));
     host.appendChild(statBlock('Memory Left For KV', report.freeForKvGB.toFixed(2) + ' GB'));
-    host.appendChild(statBlock('Max Concurrent Sequences', String(report.maxSequences)));
+    host.appendChild(statBlock('Max Concurrent Sequences', String(report.maxSequences), 'hero'));
 
     var verdict = $('mem-verdict');
     if (report.weightsBytes > cfg.budgetGB * 1e9) {
@@ -362,6 +490,10 @@
     var current = Queue.simulateQueue(opts);
     lastSweep = Queue.sweep(SWEEP_RATES, opts);
 
+    if (chartHover != null && chartHover >= lastSweep.length) {
+      chartHover = null;
+    }
+
     var body = $('sim-table-body');
     body.innerHTML = '';
     lastSweep.forEach(function (row) {
@@ -384,12 +516,22 @@
     detail.innerHTML = '';
     detail.appendChild(statBlock('Completed', String(current.count)));
     detail.appendChild(statBlock('p50 Latency', fmtSec(current.p50)));
-    detail.appendChild(statBlock('p95 Latency', fmtSec(current.p95)));
+    detail.appendChild(statBlock('p95 Latency', fmtSec(current.p95), 'hero'));
     detail.appendChild(statBlock('Mean Wait', fmtSec(current.meanWait)));
     detail.appendChild(statBlock('Utilization', fmtPct(current.utilization)));
     detail.appendChild(statBlock('Throughput', current.throughput.toFixed(2) + ' per second'));
 
     drawSimChart(lastSweep);
+    updateCrosshairReadout();
+  }
+
+  function niceCeil(v) {
+    if (!(v > 0)) { return 1; }
+    var exp = Math.floor(Math.log(v) / Math.LN10);
+    var base = Math.pow(10, exp);
+    var f = v / base;
+    var nice = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+    return nice * base;
   }
 
   function drawSimChart(rows) {
@@ -398,7 +540,7 @@
     var cssWidth = canvas.clientWidth;
     if (cssWidth < 60) { return; }
     var dpr = window.devicePixelRatio || 1;
-    var height = 260;
+    var height = 300;
     canvas.width = Math.round(cssWidth * dpr);
     canvas.height = Math.round(height * dpr);
 
@@ -406,14 +548,20 @@
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, cssWidth, height);
 
-    var m = { top: 26, right: 16, bottom: 42, left: 56 };
+    var m = CHART_M;
     var plotW = cssWidth - m.left - m.right;
     var plotH = height - m.top - m.bottom;
     if (plotW < 40 || plotH < 40) { return; }
 
     var rates = rows.map(function (r) { return r.arrivalRate; });
-    var p95s = rows.map(function (r) { return r.p95 || 0; });
-    var maxY = Math.max.apply(null, p95s.concat([0.0001])) * 1.1;
+    chartGeo = { mLeft: m.left, mRight: m.right, cssWidth: cssWidth, rates: rates };
+
+    var peak = 0;
+    rows.forEach(function (r) {
+      if (r.p50 != null) { peak = Math.max(peak, r.p50); }
+      if (r.p95 != null) { peak = Math.max(peak, r.p95); }
+    });
+    var maxY = niceCeil(peak * 1.06);
     var xMin = Math.min.apply(null, rates);
     var xMax = Math.max.apply(null, rates);
 
@@ -425,45 +573,85 @@
       return m.top + plotH - (v / maxY) * plotH;
     }
 
-    ctx.font = '11px -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif';
+    ctx.font = CHART.font;
 
-    var gridLines = 4;
-    for (var g = 0; g <= gridLines; g++) {
-      var vy = maxY * g / gridLines;
+    /* Horizontal grid, axis ticks and y labels. */
+    var yDivs = 4;
+    for (var g = 0; g <= yDivs; g++) {
+      var vy = maxY * g / yDivs;
       var py = yPos(vy);
-      ctx.strokeStyle = 'rgba(35, 45, 66, 0.9)';
+      ctx.strokeStyle = g === 0 ? CHART.gridStrong : CHART.grid;
       ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.moveTo(m.left, py);
       ctx.lineTo(m.left + plotW, py);
       ctx.stroke();
-      ctx.fillStyle = '#6b7891';
+      ctx.strokeStyle = CHART.faint;
+      ctx.beginPath();
+      ctx.moveTo(m.left - 4, py);
+      ctx.lineTo(m.left, py);
+      ctx.stroke();
+      ctx.fillStyle = CHART.muted;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'middle';
       ctx.fillText(vy.toFixed(2), m.left - 8, py);
     }
 
+    /* Left axis line. */
+    ctx.strokeStyle = CHART.gridStrong;
+    ctx.beginPath();
+    ctx.moveTo(m.left, m.top);
+    ctx.lineTo(m.left, m.top + plotH);
+    ctx.stroke();
+
+    /* Vertical grid, axis ticks and x labels at each sweep rate. */
     ctx.textBaseline = 'top';
-    ctx.textAlign = 'center';
-    ctx.fillStyle = '#6b7891';
     rows.forEach(function (r) {
-      ctx.fillText(r.arrivalRate.toFixed(1), xPos(r.arrivalRate), m.top + plotH + 8);
+      var px = xPos(r.arrivalRate);
+      ctx.strokeStyle = CHART.grid;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(px, m.top);
+      ctx.lineTo(px, m.top + plotH);
+      ctx.stroke();
+      ctx.strokeStyle = CHART.faint;
+      ctx.beginPath();
+      ctx.moveTo(px, m.top + plotH);
+      ctx.lineTo(px, m.top + plotH + 4);
+      ctx.stroke();
+      ctx.fillStyle = CHART.muted;
+      ctx.textAlign = 'center';
+      ctx.fillText(r.arrivalRate.toFixed(1), px, m.top + plotH + 9);
     });
 
-    ctx.fillStyle = '#9aa7bc';
+    /* Axis titles. */
+    ctx.fillStyle = CHART.muted;
     ctx.textAlign = 'left';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('Latency, seconds', m.left, 10);
-    ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('Arrival Rate, requests per second', m.left + plotW / 2, height - 16);
+    ctx.fillText('Latency, seconds', m.left, 8);
+    ctx.textAlign = 'center';
+    ctx.fillText('Arrival rate, requests per second', m.left + plotW / 2, height - 14);
 
-    function drawSeries(key, color) {
+    /* Crosshair sits under the series lines. */
+    if (chartHover != null && rows[chartHover]) {
+      var cx = xPos(rows[chartHover].arrivalRate);
+      ctx.strokeStyle = CHART.crosshair;
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(cx, m.top);
+      ctx.lineTo(cx, m.top + plotH);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    function drawSeries(key, color, dashed) {
       var pts = rows.filter(function (r) { return r[key] != null; });
       if (pts.length === 0) { return; }
+      ctx.save();
+      if (dashed) { ctx.setLineDash([5, 4]); }
       ctx.strokeStyle = color;
-      ctx.fillStyle = color;
-      ctx.lineWidth = 2;
+      ctx.lineWidth = dashed ? 1.5 : 2;
+      ctx.globalAlpha = dashed ? 0.85 : 1;
       ctx.lineJoin = 'round';
       ctx.beginPath();
       pts.forEach(function (r, i) {
@@ -472,15 +660,109 @@
         if (i === 0) { ctx.moveTo(px, py); } else { ctx.lineTo(px, py); }
       });
       ctx.stroke();
+      ctx.restore();
+
       pts.forEach(function (r) {
-        ctx.beginPath();
-        ctx.arc(xPos(r.arrivalRate), yPos(r[key]), 3, 0, Math.PI * 2);
-        ctx.fill();
+        var px = xPos(r.arrivalRate);
+        var py = yPos(r[key]);
+        var isHot = chartHover != null && rows[chartHover] === r;
+        ctx.globalAlpha = dashed ? 0.9 : 1;
+        if (dashed) {
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(px - 2.5, py - 2.5, 5, 5);
+        } else {
+          ctx.fillStyle = color;
+          ctx.fillRect(px - 2.5, py - 2.5, 5, 5);
+        }
+        if (isHot) {
+          ctx.globalAlpha = 1;
+          ctx.strokeStyle = dashed ? CHART.ink : color;
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(px - 5.5, py - 5.5, 11, 11);
+        }
+        ctx.globalAlpha = 1;
       });
     }
 
-    drawSeries('p50', '#3fd6c2');
-    drawSeries('p95', '#8b7cff');
+    drawSeries('p50', CHART.accent, false);
+    drawSeries('p95', CHART.ink, true);
+  }
+
+  function nearestRateIndex(cssX) {
+    if (!chartGeo || !chartGeo.rates.length) { return null; }
+    var plotW = chartGeo.cssWidth - chartGeo.mLeft - chartGeo.mRight;
+    if (plotW <= 0) { return null; }
+    var min = chartGeo.rates[0];
+    var max = chartGeo.rates[chartGeo.rates.length - 1];
+    var v = min + ((cssX - chartGeo.mLeft) / plotW) * (max - min);
+    var best = 0;
+    var bestD = Infinity;
+    chartGeo.rates.forEach(function (r, i) {
+      var d = Math.abs(r - v);
+      if (d < bestD) { bestD = d; best = i; }
+    });
+    return best;
+  }
+
+  function updateCrosshairReadout() {
+    var read = $('sim-crosshair');
+    var live = $('sim-crosshair-live');
+    if (!read) { return; }
+    if (chartHover == null || !lastSweep[chartHover]) {
+      read.textContent = 'Hover the chart, or focus it and use the arrow keys, to read each point.';
+      if (live) { live.textContent = ''; }
+      return;
+    }
+    var row = lastSweep[chartHover];
+    var text = 'Arrival rate ' + row.arrivalRate.toFixed(1) + ' per second. ' +
+      'p50 ' + fmtSec(row.p50) + '. p95 ' + fmtSec(row.p95) + '.';
+    read.textContent = text;
+    if (live) { live.textContent = text; }
+  }
+
+  function setChartHover(idx) {
+    if (chartHover === idx) { return; }
+    chartHover = idx;
+    drawSimChart(lastSweep);
+    updateCrosshairReadout();
+  }
+
+  function wireSimChart() {
+    var canvas = $('sim-chart');
+    if (!canvas) { return; }
+    canvas.addEventListener('pointermove', function (e) {
+      var rect = canvas.getBoundingClientRect();
+      setChartHover(nearestRateIndex(e.clientX - rect.left));
+    });
+    canvas.addEventListener('pointerleave', function () {
+      setChartHover(null);
+    });
+    canvas.addEventListener('keydown', function (e) {
+      var n = lastSweep.length;
+      if (!n) { return; }
+      if (e.key === 'Escape') {
+        setChartHover(null);
+        e.preventDefault();
+        return;
+      }
+      var cur = chartHover == null ? -1 : chartHover;
+      var next = null;
+      if (e.key === 'ArrowRight') { next = Math.min(n - 1, cur + 1); }
+      else if (e.key === 'ArrowLeft') { next = Math.max(0, cur - 1); }
+      else if (e.key === 'Home') { next = 0; }
+      else if (e.key === 'End') { next = n - 1; }
+      if (next !== null) {
+        e.preventDefault();
+        if (next !== cur) { setChartHover(next); }
+      }
+    });
+    canvas.addEventListener('focus', function () {
+      if (chartHover == null && lastSweep.length) { setChartHover(0); }
+    });
+    canvas.addEventListener('blur', function () {
+      setChartHover(null);
+    });
   }
 
   function wireSim() {
@@ -488,6 +770,7 @@
       $(id).addEventListener('input', debounce(renderSimData, 160));
     });
     $('sim-run').addEventListener('click', renderSimData);
+    wireSimChart();
   }
 
   /* ---------- route builder ---------- */
@@ -607,7 +890,7 @@
 
     var summary = $('route-summary');
     summary.innerHTML = '';
-    summary.appendChild(statBlock('Total Cost', Pricing.formatUSD(s.totalCost)));
+    summary.appendChild(statBlock('Total Cost', Pricing.formatUSD(s.totalCost), 'hero'));
     summary.appendChild(statBlock('All Premium Cost', Pricing.formatUSD(s.allPremiumCost)));
     summary.appendChild(statBlock('Savings Vs Premium', s.savingsVsPremiumPct.toFixed(1) + '%'));
     summary.appendChild(statBlock('Success Rate', fmtPct(s.successRate)));
@@ -888,9 +1171,11 @@
     renderSimData();
     renderRouteControls();
     renderRouteReplay();
+    moveTabIndicator();
 
     window.addEventListener('resize', debounce(function () {
       drawSimChart(lastSweep);
+      moveTabIndicator();
       if (tour.active) { positionTour(); }
     }, 120));
   }
