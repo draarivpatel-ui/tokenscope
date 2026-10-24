@@ -34,8 +34,8 @@
   var CHART = {
     accent: '#3ad6e8',
     ink: 'rgba(233, 237, 242, 0.88)',
-    muted: '#8d99a8',
-    faint: '#5a6472',
+    muted: '#9aa4b1',
+    faint: '#7d8794',
     grid: 'rgba(148, 163, 184, 0.10)',
     gridStrong: 'rgba(148, 163, 184, 0.22)',
     crosshair: 'rgba(58, 214, 232, 0.45)',
@@ -909,7 +909,9 @@
       var routeTd = document.createElement('td');
       row.chain.forEach(function (id, i) {
         if (i > 0) {
-          routeTd.appendChild(el('span', 'route-arrow', '→'));
+          var arrow = el('span', 'route-arrow', '→');
+          arrow.setAttribute('aria-hidden', 'true');
+          routeTd.appendChild(arrow);
         }
         routeTd.appendChild(document.createTextNode(modelName(id)));
       });

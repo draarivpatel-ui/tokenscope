@@ -134,3 +134,40 @@ about 0.05 seconds with no network access.
 5. Beginner friendly by design: a guided tour with step highlights and Next
    buttons walks new users through every panel, and 100 passing node:test
    assertions pin the pricing, memory, queueing and routing math.
+
+## Refinement Pass 2026-10-24
+
+A defect and polish sweep over the deployed build. No art direction, feature or dependency
+changed. Tests before the pass, 100 passing. Tests after the pass, 100 passing.
+
+Defects found and fixed.
+
+- Missing share metadata. The page had description, theme color and favicon but no Open Graph
+  tags. Added og title, og description and og type, all text only, no external images.
+- Token level contrast near misses, computed with the WCAG formula from the hex tokens.
+  `--faint` on `--panel` measured 4.34 to 1 (hints, the proof index and cost unit labels sit
+  on that pair) and 4.31 to 1 on `--panel-2`. Raised `--faint` from `#707c8a` to `#7d8794`,
+  which measures 4.75 to 1 or better on every surface in the palette including `--panel-2`.
+- The canvas chart palette comment says it mirrors the stylesheet tokens, but it had drifted.
+  Chart muted was `#8d99a8` against the token `#9aa4b1`, and chart faint was `#5a6472`,
+  measuring 3.24 to 1 for the tick marks it draws. Both now mirror the tokens exactly
+  (`#9aa4b1` and `#7d8794`), which lifts the axis label text to 7.7 to 1 and the tick marks to
+  5.3 to 1 on the chart well.
+- The route chain arrows in the replay table were plain text to screen readers. The arrow
+  spans are now aria hidden, so a row reads as model names with the arrow left out.
+
+Checked and found already sound. All 40 id references in app.js resolve against the HTML or
+the dynamically created tour and rule row markup, no duplicate ids, no dead listeners, no
+console paths on load. Tabs implement the full ARIA pattern with roving tabindex and arrow,
+Home and End keys. The chart is focusable with the same keyboard model and mirrors every
+crosshair readout into a polite live region. Skip link, focus visible rings and label
+associations all check out, and the fields hidden on small screens are display none rather
+than focus traps. Reduced motion kills the LED pulse, panel transition, tab indicator and
+smooth scrolling; the two JS animations run on requestAnimationFrame or user gesture, both of
+which pause in hidden tabs. Copy has no em or en dashes, no emoji, no all caps kickers. No
+layout overflows at 320 px, tables scroll inside their own containers and the rule rows
+collapse by 640 px.
+
+Noted, not forced. The guided tour is a modeless spotlight by design, the overlay passes
+pointer events through and there is no focus trap, which matches the non blocking tour
+concept, so I left it as built rather than converting it into a blocking modal dialog.
