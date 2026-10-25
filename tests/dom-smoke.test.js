@@ -67,7 +67,7 @@ test('DOM Smoke 08: all 80 id attributes in index.html are unique', () => {
 
 test('DOM Smoke 09: accessible skip-link points to #main and target landmark exists', () => {
   assert.match(indexHtml, /<a\s+class="skip-link"\s+href="#main">/);
-  assert.match(indexHtml, /<main\s+id="main"\s+class="studio">/);
+  assert.match(indexHtml, /<main\s+id="main">/);
 });
 
 test('DOM Smoke 10: <noscript> fallback banner is present inside <body>', () => {
@@ -78,7 +78,7 @@ test('DOM Smoke 11: semantic landmarks (header, nav, main, footer) and tablist a
   assert.match(indexHtml, /<header\b[^>]*>/);
   assert.match(indexHtml, /<nav\s+class="tabs-wrap"\s+aria-label="Studio Panels">/);
   assert.match(indexHtml, /<div\s+id="panel-tabs"\s+class="tabs"\s+role="tablist">/);
-  assert.match(indexHtml, /<main\s+id="main"/);
+  assert.match(indexHtml, /<main\s+id="main">/);
   assert.match(indexHtml, /<footer\s+class="site-footer">/);
 });
 
