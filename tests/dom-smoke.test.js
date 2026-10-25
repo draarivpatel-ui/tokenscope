@@ -74,9 +74,10 @@ test('DOM Smoke 10: <noscript> fallback banner is present inside <body>', () => 
   assert.match(indexHtml, /<noscript>[\s\S]*?<p\s+class="noscript-note"[\s\S]*?<\/noscript>/);
 });
 
-test('DOM Smoke 11: semantic landmarks (header, nav, main, footer) are present', () => {
+test('DOM Smoke 11: semantic landmarks (header, nav, main, footer) and tablist are present', () => {
   assert.match(indexHtml, /<header\b[^>]*>/);
-  assert.match(indexHtml, /<nav\b[^>]*role="tablist"\s+aria-label="Studio Panels"/);
+  assert.match(indexHtml, /<nav\s+class="tabs-wrap"\s+aria-label="Studio Panels">/);
+  assert.match(indexHtml, /<div\s+id="panel-tabs"\s+class="tabs"\s+role="tablist">/);
   assert.match(indexHtml, /<main\s+id="main"/);
   assert.match(indexHtml, /<footer\s+class="site-footer">/);
 });
