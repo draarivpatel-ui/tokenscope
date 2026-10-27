@@ -13,3 +13,5 @@ Built with: vanilla JavaScript, canvas, node:test.
 
 Try it: https://aariv.me/tokenscope/
 Code: https://github.com/draarivpatel-ui/tokenscope
+
+Video URL: https://youtu.be/KI6lhguCYp8
