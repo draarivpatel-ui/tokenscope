@@ -37,7 +37,7 @@ No build step and no dependencies.
   file server.
 - GitHub Pages: push these files to a repository root and enable Pages. The site
   deploys as is (a `.nojekyll` file is included).
-- Tests: run `npm test` or `node --test tests/` with Node 18 or newer. The suite
+- Tests: run `npm test` or `node --test tests/*.test.js` with Node 18 or newer. The suite
   covers pricing math, memory calculations, the queueing simulation and route
   replay, runs in well under a second and makes no network requests.
 
